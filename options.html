@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner Dashboard</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="dashboard">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Chrome Extension Dashboard</p>
+        <h1>Saved Website Leads</h1>
+        <p class="subtitle">Search, categorize, edit, import, and export UTF-8 CSV records.</p>
+      </div>
+      <div class="header-cards">
+        <button id="scanToggle" class="scan-toggle" type="button" aria-pressed="true">Scanner On</button>
+        <div class="stats"><strong id="recordCount">0</strong><span>records</span></div>
+      </div>
+    </header>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Search site, URL, mobile, email, CMS...">
+      <select id="categoryFilter"><option value="">All categories</option></select>
+      <button id="hiddenDbToggle" type="button">Show Hidden DB</button>
+      <button id="exportBtn">Export CSV UTF-8</button>
+      <label class="file-btn">Import CSV UTF-8<input id="importFile" type="file" accept=".csv,text/csv"></label>
+      <button id="deleteAllBtn" class="danger">Delete All</button>
+    </section>
+
+    <section id="hiddenDbCard" class="table-card hidden-db-card" hidden>
+      <div class="card-heading">
+        <div>
+          <h2>Hidden Database</h2>
+          <p>Stores previously opened site domains and names used for Torob matching.</p>
+        </div>
+        <div class="stats compact"><strong id="hiddenDbCount">0</strong><span>hidden</span></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Domain Key</th>
+            <th>Saved Shop Name</th>
+          </tr>
+        </thead>
+        <tbody id="hiddenDbBody"></tbody>
+      </table>
+    </section>
+
+    <section class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Site Name</th>
+            <th>Site URL</th>
+            <th>Category</th>
+            <th>Mobile</th>
+            <th>Email</th>
+            <th>CMS</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </section>
+
+    <p id="message" class="message" role="status"></p>
+  </main>
+  <script src="utils.js"></script>
+  <script src="storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
