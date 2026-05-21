@@ -6,7 +6,6 @@
 
   Utils.STORAGE_DEFAULTS = Object.freeze({
     records: [],
-    lastCategory: '',
     scanningEnabled: true,
     visitedDomains: [],
     visitedSites: []
@@ -135,7 +134,7 @@
   };
 
   Utils.recordsToCsv = function recordsToCsv(records) {
-    const header = ['site_name', 'site_url', 'category', 'mobile', 'email', 'cms'];
+    const header = ['site_name', 'mobile'];
     const rows = [header].concat((records || []).map(record => {
       return header.map(key => {
         if (key === 'mobile') return Utils.formatMobileForCsv(record[key] || '');
@@ -160,9 +159,9 @@
     const rows = Utils.parseCsvRows(String(csvText || '').replace(/^\ufeff/, ''));
     if (!rows.length) return [];
     const header = rows.shift().map(name => name.trim());
-    const expected = ['site_name', 'site_url', 'category', 'mobile', 'email', 'cms'];
+    const expected = ['site_name', 'mobile'];
     const validHeader = expected.every((name, index) => header[index] === name);
-    if (!validHeader) throw new Error('CSV header must be exactly: site_name,site_url,category,mobile,email,cms');
+    if (!validHeader) throw new Error('CSV header must be exactly: site_name,mobile');
 
     return rows
       .filter(row => row.some(cell => String(cell || '').trim()))
@@ -172,7 +171,6 @@
           record[key] = Utils.cleanText(row[index] || '');
         });
         record.mobile = Utils.normalizeIranMobile(record.mobile.replace(/^="(.*)"$/, '$1')) || record.mobile;
-        record.cms = record.cms === 'WordPress' ? 'WordPress' : 'Other';
         return record;
       });
   };

@@ -1,64 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="fa">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Iran Mobile Site Scanner</title>
+  <title>Torob Batch Runner</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <main class="popup-shell">
-    <header class="hero">
-      <div>
-        <p class="eyebrow">Automatic Scanner</p>
-        <h1 id="siteName">Loading...</h1>
-      </div>
-      <span id="statusPill" class="status">Scanning</span>
-    </header>
-
     <section class="card">
-      <label>Site URL</label>
-      <a id="siteUrl" href="#" target="_blank" rel="noreferrer">-</a>
+      <label for="torobLinks">لینک‌های ترب (هر خط یک لینک)</label>
+      <textarea id="torobLinks" class="mobile-editor" rows="8" placeholder="torob.com/shop/100000&#10;torob.com/shop/100100"></textarea>
     </section>
-
-    <section class="grid">
-      <div class="card">
-        <label>Detected CMS</label>
-        <strong id="cms">-</strong>
-      </div>
-      <div class="card">
-        <label>Category</label>
-        <input id="category" type="text" placeholder="e.g. Real Estate, Clinic, Leads">
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <label>Mobile Numbers</label>
-        <span id="mobileCount">0</span>
-      </div>
-      <textarea id="mobiles" class="mobile-editor" rows="5" placeholder="Enter one or more Iranian mobile numbers. Separate with new lines, commas, spaces, or dashes."></textarea>
-      <p class="hint">You can edit detected numbers or add new numbers manually before saving.</p>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <label>Email Addresses</label>
-        <span id="emailCount">0</span>
-      </div>
-      <ul id="emails" class="list"></ul>
-    </section>
-
     <footer class="actions">
-      <button id="saveBtn" class="primary">Save / Update</button>
-      <button id="deleteBtn" class="danger">Delete This Site</button>
-      <button id="rescanBtn">Rescan</button>
+      <button id="startBtn" class="primary">Start</button>
       <button id="dashboardBtn">Open Dashboard</button>
     </footer>
-
     <p id="message" class="message" role="status"></p>
   </main>
-  <script src="utils.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

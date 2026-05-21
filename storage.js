@@ -8,21 +8,21 @@
   Storage.sanitizeRecord = function sanitizeRecord(record) {
     return {
       site_name: Utils.cleanText(record && record.site_name),
-      site_url: Utils.normalizeSiteUrl(record && record.site_url),
-      category: Utils.cleanText(record && record.category),
+      site_url: Utils.cleanText(record && record.site_url) || Utils.cleanText(record && record.site_name),
+      category: '',
       mobile: Utils.normalizeIranMobile(record && record.mobile) || Utils.cleanText(record && record.mobile),
-      email: Utils.cleanText(record && record.email),
-      cms: record && record.cms === 'WordPress' ? 'WordPress' : 'Other'
+      email: '',
+      cms: 'Other'
     };
   };
 
   Storage.getState = async function getState() {
     const state = await chrome.storage.local.get(Utils.STORAGE_DEFAULTS);
     const rawRecords = Array.isArray(state.records) ? state.records : [];
-    const records = rawRecords.map(Storage.sanitizeRecord).filter(record => record.site_url && record.mobile);
+    const records = rawRecords.map(Storage.sanitizeRecord).filter(record => record.mobile);
     return {
       records,
-      lastCategory: typeof state.lastCategory === 'string' ? state.lastCategory : '',
+      lastCategory: '',
       scanningEnabled: state.scanningEnabled !== false
     };
   };
@@ -31,7 +31,6 @@
     const current = await chrome.storage.local.get(Utils.STORAGE_DEFAULTS);
     await chrome.storage.local.set({
       records: Array.isArray(nextState.records) ? nextState.records : [],
-      lastCategory: typeof nextState.lastCategory === 'string' ? nextState.lastCategory : '',
       scanningEnabled: typeof nextState.scanningEnabled === 'boolean'
         ? nextState.scanningEnabled
         : current.scanningEnabled !== false
@@ -46,7 +45,7 @@
 
   Storage.saveExtractedSite = async function saveExtractedSite(payload, categoryOverride) {
     const state = await Storage.getState();
-    const category = typeof categoryOverride === 'string' ? categoryOverride : state.lastCategory;
+    const category = ''; // removed
     const siteUrl = Utils.normalizeSiteUrl(payload.site_url || '');
     const siteName = Utils.cleanText(payload.site_name) || Utils.extractBrandName('', siteUrl);
     const cms = payload.cms === 'WordPress' ? 'WordPress' : 'Other';
@@ -142,7 +141,7 @@
 
     importedRecords.forEach(record => {
       const clean = Storage.sanitizeRecord(record);
-      if (!clean.site_url || !clean.mobile) return;
+      if (!clean.mobile) return;
       const key = Utils.recordKey(clean);
       if (byKey.has(key)) source[byKey.get(key)] = clean;
       else {
