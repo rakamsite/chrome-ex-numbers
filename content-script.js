@@ -224,11 +224,15 @@
 
   function buildTorobShopPayload() {
     const visibleText = collectText();
+    const outgoingLinks = Array.from(document.querySelectorAll('a[href]'))
+      .map(a => a.href)
+      .filter(href => /^https?:\/\//i.test(href) && !/\btorob\.com\b/i.test(href));
     return {
       site_name: readTorobPageTitle(),
       site_url: Utils.normalizeRecordUrl(location.href),
       mobiles: Utils.extractIranMobiles(visibleText),
       emails: Utils.extractEmails(visibleText),
+      outgoingLinks: Utils.unique(outgoingLinks),
       cms: 'Other',
       scanned_at: new Date().toISOString()
     };

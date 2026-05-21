@@ -9,6 +9,37 @@ const torobShopPageByTab = new Map();
 let visitedDomainPartsCache = null;
 let visitedSitesCache = null;
 
+const torobBatch = { queue: [], running: false, currentTabId: null };
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function randomDelayMs() { return (10 + Math.floor(Math.random() * 11)) * 1000; }
+function extractShopNameFromTitle(title) {
+  const text = Utils.cleanText(title || '');
+  const m = text.match(/فروشگاه\s+(.+?)\s*(?:\||$)/);
+  return Utils.cleanText(m ? m[1] : text.replace(/\|.*$/, ''));
+}
+async function saveMinimal(name, mobiles) {
+  for (const mobile of mobiles) {
+    await Storage.upsertRecord({ site_name: name, mobile });
+  }
+}
+async function notifyRobot() {
+  try { await chrome.windows.update((await chrome.windows.getCurrent()).id, { focused: true, drawAttention: true }); } catch {}
+}
+async function runTorobBatch() {
+  if (torobBatch.running) return;
+  torobBatch.running = true;
+  while (torobBatch.queue.length) {
+    const link = torobBatch.queue.shift();
+    const tab = await chrome.tabs.create({ url: link, active: false });
+    torobBatch.currentTabId = tab.id;
+    await sleep(randomDelayMs());
+  }
+  torobBatch.currentTabId = null;
+  torobBatch.running = false;
+}
+
+
 const ICONS = {
   gray: { 16: 'icons/gray-16.png', 32: 'icons/gray-32.png', 48: 'icons/gray-48.png', 128: 'icons/gray-128.png' },
   yellow: { 16: 'icons/yellow-16.png', 32: 'icons/yellow-32.png', 48: 'icons/yellow-48.png', 128: 'icons/yellow-128.png' },
@@ -271,6 +302,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   (async () => {
     const enabled = await isScanningEnabled();
     if (!enabled) return setIcon(tabId, 'gray');
+    if (tabId === torobBatch.currentTabId && changeInfo.title && /robot|captcha|unusual|امنیتی|ربات/i.test(changeInfo.title)) { await notifyRobot(); }
+    if (tabId === torobBatch.currentTabId && (changeInfo.statusCode === 495 || changeInfo.statusCode === 496 || changeInfo.statusCode === 525)) { await closeTabAfterSaved(tabId); return; }
     if (changeInfo.status === 'loading') {
       const url = changeInfo.url || tab.url;
       if (Utils.isTorobShopUrl(url)) {
@@ -337,6 +370,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       payload.cms = payload.cms === 'WordPress' ? 'WordPress' : 'Other';
       if (tabId != null) await registerVisitedSite(tabId, sourceUrl, payload.site_name);
       payload.site_name = await getHiddenSiteNameForUrl(sourceUrl) || payload.site_name;
+      const prev = tabId != null ? latestByTab.get(tabId) : null;
+      if (prev?.fromTorobBatch) {
+        const name = prev.site_name || payload.site_name;
+        if (payload.mobiles.length) await saveMinimal(name, payload.mobiles);
+        if (tabId != null) await closeTabAfterSaved(tabId);
+        return sendResponse({ ok: true, payload, saved: payload.mobiles.length > 0 });
+      }
       if (tabId != null) latestByTab.set(tabId, payload);
       let saved = false;
       if (payload.mobiles.length) {
@@ -359,9 +399,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'TOROB_SHOP_SCAN_RESULT') {
       const tabId = sender.tab && sender.tab.id;
       const payload = message.payload || {};
-      const saved = await registerTorobShopPage(tabId, payload);
-      sendResponse({ ok: true, saved, payload: torobShopPageByTab.get(tabId) || payload });
+      const shopName = extractShopNameFromTitle(payload.site_name || sender.tab?.title || '');
+      const mobiles = Utils.unique((payload.mobiles || []).map(Utils.normalizeIranMobile).filter(Boolean));
+      if (mobiles.length) {
+        await saveMinimal(shopName, mobiles);
+        if (tabId != null) await closeTabAfterSaved(tabId);
+        sendResponse({ ok: true, saved: true, direct: true });
+        return;
+      }
+      const outgoing = (payload.outgoingLinks || []).find(url => /^https?:\/\//i.test(url));
+      if (outgoing && tabId != null) {
+        latestByTab.set(tabId, { site_name: shopName, fromTorobBatch: true });
+        await chrome.tabs.update(tabId, { url: outgoing });
+        sendResponse({ ok: true, saved: false, redirected: true });
+        return;
+      }
+      if (tabId != null) await closeTabAfterSaved(tabId);
+      sendResponse({ ok: true, saved: false });
       return;
+    }
+
+    if (message.type === 'START_TOROB_BATCH') {
+      const links = Array.isArray(message.links) ? message.links : [];
+      torobBatch.queue.push(...links);
+      runTorobBatch().catch(() => {});
+      return sendResponse({ ok: true, count: links.length });
     }
 
     if (message.type === 'GET_VISITED_SITE_NAMES') {
